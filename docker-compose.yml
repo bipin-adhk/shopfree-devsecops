@@ -1,0 +1,35 @@
+version: "3.8"
+services:
+  web:
+    build: ./web
+    ports:
+      - "3000:80"
+    environment:
+      - NODE_ENV=production
+    depends_on:
+      - db
+    networks:
+      - shopnet
+
+  db:
+    build: ./db
+    volumes:
+      - db_data:/data
+    environment:
+      POSTGRES_PASSWORD: ${DB_PASS}
+    networks:
+      - shopnet
+
+  jenkins:
+    build: ./jenkins
+    ports:
+      - "8080:8080"
+      - "50000:50000"
+    networks:
+      - shopnet
+
+networks:
+  shopnet:
+
+volumes:
+  db_data:
