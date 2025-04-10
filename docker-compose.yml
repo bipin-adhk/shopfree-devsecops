@@ -1,35 +1,60 @@
 version: "3.8"
+
 services:
-  web:
-    build: ./web
-    ports:
-      - "3000:80"
+  db:
+    image: postgres:13
     environment:
-      - NODE_ENV=production
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: shopfree
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    networks:
+      - shopnet
+
+  web:
+    build:
+      context: ./web
+    ports:
+      - "3001:80"
     depends_on:
       - db
     networks:
       - shopnet
 
-  db:
-    build: ./db
-    volumes:
-      - db_data:/data
-    environment:
-      POSTGRES_PASSWORD: ${DB_PASS}
-    networks:
-      - shopnet
-
   jenkins:
-    build: ./jenkins
+    build:
+      context: ./jenkins
     ports:
-      - "8080:8080"
-      - "50000:50000"
+      - "9081:8080"
+      - "50001:50000"
+    user: root
+    volumes:
+      - ./jenkins_home:/var/jenkins_home
+      - /var/run/docker.sock:/var/run/docker.sock
     networks:
       - shopnet
 
-networks:
-  shopnet:
+  sonarqube:
+    image: sonarqube:community
+    container_name: shopfree-sonarqube
+    ports:
+      - "9000:9000"
+    environment:
+      - SONAR_ES_BOOTSTRAP_CHECKS_DISABLE=true
+    volumes:
+      - sonarqube_data:/opt/sonarqube/data
+      - sonarqube_logs:/opt/sonarqube/logs
+      - sonarqube_extensions:/opt/sonarqube/extensions
+    networks:
+      - shopnet
 
 volumes:
   db_data:
+  sonarqube_data:
+  sonarqube_logs:
+  sonarqube_extensions:
+
+networks:
+  shopnet:
+    driver: bridge

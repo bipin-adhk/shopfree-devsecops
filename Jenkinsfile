@@ -16,7 +16,6 @@ pipeline {
             steps {
                 dir('web') {
                     sh 'npm install eslint'
-                    // Optional: ignore lint failure to avoid breaking build
                     sh './node_modules/.bin/eslint src || true'
                 }
             }
@@ -27,6 +26,14 @@ pipeline {
                 dir('web') {
                     sh 'npm install'
                     sh 'npm run build'
+                }
+            }
+        }
+
+        stage('SonarQube Scan') {
+            steps {
+                withSonarQubeEnv('MySonarQubeServer') {
+                    sh 'sonar-scanner'
                 }
             }
         }
@@ -46,7 +53,18 @@ pipeline {
         stage('Security Audit') {
             steps {
                 dir('ansible') {
-                    sh 'ansible-lint ../web'
+                    script {
+                        def hasAnsibleFiles = sh(
+                            script: 'ls ../web/*.yml ../web/*.yaml 2>/dev/null || true',
+                            returnStdout: true
+                        ).trim()
+
+                        if (hasAnsibleFiles) {
+                            sh 'ansible-lint ../web'
+                        } else {
+                            echo 'No Ansible files found, skipping ansible-lint.'
+                        }
+                    }
                 }
             }
         }
@@ -55,7 +73,7 @@ pipeline {
     post {
         failure {
             echo 'Something went wrong. Triggering rollback...'
-            sh 'docker-compose down || true'
+            sh 'docker-compose down'
         }
     }
 }
