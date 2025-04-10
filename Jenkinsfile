@@ -14,8 +14,10 @@ pipeline {
 
     stage('Lint') {
       steps {
-        sh 'npm install -g eslint'
-        sh './node_modules/.bin/eslint src || true'  // Prevent failure if no ESLint config yet
+        dir('web') {
+          sh 'npm install eslint'
+          sh './node_modules/.bin/eslint src || true'
+        }
       }
     }
 
@@ -50,7 +52,7 @@ pipeline {
   post {
     failure {
       echo 'Something went wrong. Triggering rollback...'
-      sh 'docker-compose down'
+      sh 'docker-compose down || true'
     }
   }
 }
