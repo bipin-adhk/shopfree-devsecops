@@ -8,7 +8,7 @@ pipeline {
   stages {
     stage('Clone Repo') {
       steps {
-        git url: 'https://github.com/bipin-adhk/shopfree.git', branch: 'main'
+        git credentialsId: 'github-creds', url: 'https://github.com/bipin-adhk/shopfree-devsecops.git', branch: 'main'
       }
     }
 
