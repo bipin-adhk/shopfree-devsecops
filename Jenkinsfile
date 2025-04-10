@@ -1,58 +1,61 @@
 pipeline {
-  agent any
+    agent any
 
-  environment {
-    DOCKER_BUILDKIT = "1"
-  }
-
-  stages {
-    stage('Clone Repo') {
-      steps {
-        git credentialsId: 'github-creds', url: 'https://github.com/bipin-adhk/shopfree-devsecops.git', branch: 'main'
-      }
+    environment {
+        DOCKER_BUILDKIT = '1'
     }
 
-    stage('Lint') {
-      steps {
-        dir('web') {
-          sh 'npm install eslint'
-          sh './node_modules/.bin/eslint src || true'
+    stages {
+        stage('Checkout Code') {
+            steps {
+                checkout scm
+            }
         }
-      }
-    }
 
-    stage('Build Web App') {
-      steps {
-        dir('web') {
-          sh 'npm install'
-          sh 'npm run build'
+        stage('Lint') {
+            steps {
+                dir('web') {
+                    sh 'npm install eslint'
+                    // Optional: ignore lint failure to avoid breaking build
+                    sh './node_modules/.bin/eslint src || true'
+                }
+            }
         }
-      }
+
+        stage('Build Web App') {
+            steps {
+                dir('web') {
+                    sh 'npm install'
+                    sh 'npm run build'
+                }
+            }
+        }
+
+        stage('Build Docker Images') {
+            steps {
+                sh 'docker-compose build'
+            }
+        }
+
+        stage('Deploy Containers') {
+            steps {
+                sh 'docker-compose up -d'
+            }
+        }
+
+        stage('Security Audit') {
+            steps {
+                dir('ansible') {
+                    sh 'ansible-lint ../web'
+                }
+            }
+        }
     }
 
-    stage('Build Docker Images') {
-      steps {
-        sh 'docker-compose build'
-      }
+    post {
+        failure {
+            echo 'Something went wrong. Triggering rollback...'
+            sh 'docker-compose down || true'
+        }
     }
-
-    stage('Deploy Containers') {
-      steps {
-        sh 'docker-compose up -d'
-      }
-    }
-
-    stage('Security Audit') {
-      steps {
-        sh 'ansible-lint ansible/site.yml || true'
-      }
-    }
-  }
-
-  post {
-    failure {
-      echo 'Something went wrong. Triggering rollback...'
-      sh 'docker-compose down || true'
-    }
-  }
 }
