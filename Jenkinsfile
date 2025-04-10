@@ -15,7 +15,7 @@ pipeline {
     stage('Lint') {
       steps {
         sh 'npm install -g eslint'
-        sh 'eslint web/src || true'  // Prevent failure if no ESLint config yet
+        sh './node_modules/.bin/eslint src || true'  // Prevent failure if no ESLint config yet
       }
     }
 
